@@ -1,3 +1,5 @@
+import os
+
 from fabric.api import *
 
 
@@ -20,11 +22,11 @@ def production():
     env.remote = 'production'
     env.heroku_app = 'production'
 
-
 # Default Environment
 development()
 
 # === Hotfix's ===
+
 
 def start_hotfix(name):
     local('git checkout -b hotfix-{name}'.format(name=name))
@@ -36,9 +38,13 @@ def close_hotfix(name):
     local('git checkout develop')
     local('git merge --no-ff hotfix-{name}'.format(name=name))
     local('git branch -d hotfix-{name}'.format(name=name))
+    local('git checkout master')
+    production()
+    deploy()
 
 # === Deployment ===
-# === Deployment ===
+
+
 def deploy():
     local('git push origin --all')
     local('git push {remote}'.format(**env))
@@ -46,13 +52,15 @@ def deploy():
     collectstatic()
     local('heroku open --app {heroku_app}'.format(**env))
 
+
 def collectstatic():
     if raw_input('\nDo you really want to COLLECT STATIC of {heroku_app}? YES or [NO]: '.format(**env)) == 'YES':
-        local('heroku run python manage.py collectstatic --settings={settings}  --app {heroku_app}'.format(**env))
+        local('heroku run python manage.py collectstatic --noinput --clear --settings={settings}  --app {heroku_app}'.format(**env))
     else:
         print '\nCOLLECT STATIC aborted'
 
-def open():
+
+def start():
     if env.env == 'development':
         local('/usr/bin/open \'http://127.0.0.1:8000/\'')
         local('python manage.py runserver')
@@ -60,6 +68,8 @@ def open():
         local('heroku open --app {heroku_app}'.format(**env))
 
 # === DB ===
+
+
 def resetdb():
     if env.env == 'development':
         local('python manage.py syncdb --settings={settings}'.format(**env))
@@ -72,6 +82,11 @@ def resetdb():
             local('heroku run python manage.py migrate --settings={settings} --app {heroku_app}'.format(**env))
         else:
             print '\nRESET DATABASE aborted'
+
+
+def createdb(app_names):
+    local('python manage.py schemamigration {} --initial --settings={settings}'.format(app_names, **env))
+    migrate()
 
 
 def schemamigration(app_names):
@@ -126,3 +141,20 @@ def set(key=None, value=None):
         local('heroku config:add {}={} --app {heroku_app}'.format(key, value, **env))
     else:
         print '\nErr!'
+
+
+def provision():
+
+    site_root, filename = os.path.split(os.path.abspath(__file__))
+
+    filename = env.env + '.env'
+
+    file_path = os.path.join(site_root, 'settings', filename)
+
+    with open(file_path) as fp:
+        for line in fp:
+            key, value = line.split('=')
+            value = value.strip()
+
+            if value != '':
+                set(key, value)
