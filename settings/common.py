@@ -150,6 +150,8 @@ MIDDLEWARE_CLASSES = (
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = '{{ project_name }}.wsgi.application'
 
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+
 
 #==============================================================================
 # Logging
