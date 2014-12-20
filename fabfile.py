@@ -34,9 +34,9 @@ def start_hotfix(name):
 
 def close_hotfix(name):
     local('git checkout master')
-    local('git merge --no-ff hotfix-{name}'.format(name=name))
+    local('git merge --no-ff --no-edit hotfix-{name}'.format(name=name))
     local('git checkout develop')
-    local('git merge --no-ff hotfix-{name}'.format(name=name))
+    local('git merge --no-ff --no-edit hotfix-{name}'.format(name=name))
     local('git branch -d hotfix-{name}'.format(name=name))
     local('git checkout master')
     production()
@@ -70,29 +70,6 @@ def start():
 # === DB ===
 
 
-def resetdb():
-    if env.env == 'development':
-        local('python manage.py syncdb --settings={settings}'.format(**env))
-        local('python manage.py migrate --settings={settings}'.format(**env))
-    else:
-
-        if raw_input('\nDo you really want to RESET DATABASE of {heroku_app}? YES or [NO]: '.format(**env)) == 'YES':
-            local('heroku run python manage.py syncdb --noinput --settings={settings} --app {heroku_app}'.format(
-                **env))
-            local('heroku run python manage.py migrate --settings={settings} --app {heroku_app}'.format(**env))
-        else:
-            print '\nRESET DATABASE aborted'
-
-
-def createdb(app_names):
-    local('python manage.py schemamigration {} --initial --settings={settings}'.format(app_names, **env))
-    migrate()
-
-
-def schemamigration(app_names):
-    local('python manage.py schemamigration {} --auto --settings={settings}'.format(app_names, **env))
-
-
 def migrate():
     if env.env == 'development':
         local('python manage.py migrate --settings={settings}'.format(**env))
@@ -102,11 +79,6 @@ def migrate():
             local('heroku run python manage.py migrate --settings={settings} --app {heroku_app}'.format(**env))
         else:
             print '\nMIGRATE DATABASE aborted'
-
-
-def updatedb(app_names):
-    schemamigration(app_names)
-    migrate()
 
 
 # === Heroku ===
