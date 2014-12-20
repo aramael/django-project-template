@@ -11,4 +11,4 @@ def home(request):
 
     context = {}
 
-    return render(request, '', context)
+    return render(request, 'home.html', context)
